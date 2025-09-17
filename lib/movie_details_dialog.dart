@@ -2,6 +2,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:watchalong_client/api_service.dart';
+import 'package:watchalong_client/tmdb_service.dart';
 
 class MovieDetailsDialog extends StatelessWidget {
   final Map<String, dynamic> movie;
@@ -19,16 +21,27 @@ class MovieDetailsDialog extends StatelessWidget {
 
 
     return AlertDialog(
-      title: Text(movie['name']),
+      title: FutureBuilder<String>(
+        future: TMDBService.fetchTmdbTitle(movie['name'].toString().substring(5), movie['type']),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Text('Loading...');
+          } else if (snapshot.hasError) {
+            return const Text('Error loading title');
+          } else {
+            return Text(snapshot.data ?? 'Unknown Title');
+          }
+        },
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Proposed By: ${movie['proposedBy']}'),
+          Text('Proposed By: ${ApiService.instance.usernameToAlias(movie['proposed_by'])}'),
           Text('Ratings:'),
           if (ratingsMap.isEmpty)
             const Text('No ratings yet')
           else
-            ...ratingsMap.entries.map((entry) => Text('${entry.key}: ${entry.value}')).toList(),
+            ...ratingsMap.entries.map((entry) => Text('${ApiService.instance.usernameToAlias(entry.key)}: ${entry.value}')).toList(),
         ],
       ),
       actions: [

@@ -25,7 +25,16 @@ class WatchalongApp extends StatefulWidget {
   State<WatchalongApp> createState() => _WatchalongAppState();
 }
 
-class _WatchalongAppState extends State<WatchalongApp> {
+class _WatchalongAppState extends State<WatchalongApp> with WidgetsBindingObserver {
+  // Listen to app lifecycle to reconnect websocket if needed
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && discordAccessToken != null) {
+      if (!ApiService.instance.wsConnected) {
+        ApiService.instance.connectWebSocket(accessToken: discordAccessToken);
+      }
+    }
+  }
   String? discordAccessToken;
   int selectedIndex = 0;
   bool _loading = true;
@@ -38,6 +47,12 @@ class _WatchalongAppState extends State<WatchalongApp> {
     _loadToken();
     ApiService.instance.connectWebSocket(accessToken: discordAccessToken);
     ApiService.instance.refreshAll(accessToken: discordAccessToken);
+    WidgetsBinding.instance.addObserver(this);
+  }
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
 
@@ -72,12 +87,26 @@ class _WatchalongAppState extends State<WatchalongApp> {
         home: Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
+    // Expressive Material You color schemes
+    final ColorScheme lightColorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.lightGreen,
+      brightness: Brightness.light,
+    );
+    final ColorScheme darkColorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.green,
+      brightness: Brightness.dark,
+    );
     return MaterialApp(
       title: 'Watchalong',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightGreen, secondary: Colors.green, tertiary: Colors.greenAccent),
+        colorScheme: lightColorScheme,
       ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: darkColorScheme,
+      ),
+      themeMode: ThemeMode.system, // Follows system dark/light mode
       home: Scaffold(
         appBar: discordAccessToken == null ? null : AppBar(
           actions: [

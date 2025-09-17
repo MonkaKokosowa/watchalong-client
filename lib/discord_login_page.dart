@@ -47,6 +47,7 @@ class _DiscordLoginPageState extends State<DiscordLoginPage> {
               print('Discord username: $username');
               widget.onLogin(username);
             } else {
+              print(token);
               print('Failed to fetch Discord username');
             }
           } catch (e) {
@@ -69,10 +70,12 @@ class _DiscordLoginPageState extends State<DiscordLoginPage> {
         uri,
         headers: {'Authorization': 'Bearer $accessToken'},
       );
+      print(response);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print(data);
         return data['username'];
-      }
+      } 
       return null;
     } catch (e) {
       return null;

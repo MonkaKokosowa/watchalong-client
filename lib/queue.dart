@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
+import 'tmdb_service.dart';
 
 class QueueView extends StatefulWidget {
   const QueueView({Key? key}) : super(key: key);
@@ -34,10 +35,26 @@ class _QueueViewState extends State<QueueView> {
                   itemCount: queueItems.length,
                   separatorBuilder: (context, index) => const Divider(),
                   itemBuilder: (context, index) {
+                    final item = queueItems[index];
+                    final poster = (item is Map && item['poster_path'] != null)
+                        ? TMDBService.getPosterUrl(item['poster_path'])
+                        : null;
                     return ListTile(
-                      leading: Text('${index + 1}'),
-                      title: Text(queueItems[index] is String ? queueItems[index] : (queueItems[index]['name'] ?? '')),
-                    );
+                      leading: poster != null
+                          ? Image.network(poster, width: 40, height: 60, fit: BoxFit.cover)
+                          : Text('${index + 1}'),
+                      title: FutureBuilder<String>(
+                        future: TMDBService.fetchTmdbTitle(item['name'].toString().substring(5), item['type']),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Text('Loading...');
+                          } else if (snapshot.hasError) {
+                            return Text('Error loading title');
+                          } else {
+                            return Text(snapshot.data == "Unknown TMDB" ? item['name'] : snapshot.data);
+                          }
+                        },
+                    ));
                   },
                 ),
         );
